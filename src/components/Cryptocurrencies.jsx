@@ -11,9 +11,11 @@ const {Text} = Typography;
 const PAGE_SIZE = 100;
 
 const Cryptocurrencies = ({simplified}) => {
-  // 5000 is the most the API allows per request, which covers every coin it lists
-  const count = simplified ? 10 : 5000;
-  const {data: cryptosList, isFetching} = useGetCryptosQuery(count);
+  // The first coins come from a small, fast request so cards appear quickly. On the full page, every coin then loads in
+  // the background for search and "Load more" (5000 is the most the API allows per request, which covers every coin).
+  const {data: firstCoins, isFetching} = useGetCryptosQuery(simplified ? 10 : PAGE_SIZE);
+  const {data: allCoins} = useGetCryptosQuery(5000, {skip: simplified});
+  const cryptosList = allCoins || firstCoins;
   const [cryptos, setCryptos] = useState();
   const [searchTerm, setSearchTerm] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -24,12 +26,17 @@ const Cryptocurrencies = ({simplified}) => {
     const filteredData = cryptosList?.data?.coins.filter((coin) => coin.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
     setCryptos(filteredData);
-    setVisibleCount(PAGE_SIZE);
   }, [cryptosList, searchTerm]);
+
+  // A new search starts again from the first 100 results
+  useEffect(() => setVisibleCount(PAGE_SIZE), [searchTerm]);
 
   console.log(cryptos);
 
   if(isFetching) return 'Loading...';
+
+  // Until every coin has loaded, the total comes from the API's stats
+  const totalCount = searchTerm || allCoins ? cryptos?.length : cryptosList?.data?.stats?.total;
 
   return (
     <>
@@ -55,11 +62,11 @@ const Cryptocurrencies = ({simplified}) => {
           </Col>
         ))}
       </Row>
-      {cryptos?.length === 0 && <Empty description="No coins match your search" />}
-      {cryptos?.length > visibleCount && (
+      {cryptos?.length === 0 && <Empty description={allCoins ? 'No coins match your search' : 'Searching all coins...'} />}
+      {cryptos && !simplified && totalCount > visibleCount && (
         <div className="load-more">
-          <Text type="secondary">Showing {visibleCount} of {cryptos.length.toLocaleString()} coins</Text>
-          <Button size="large" onClick={() => setVisibleCount(visibleCount + PAGE_SIZE)}>Load more</Button>
+          <Text type="secondary">Showing {Math.min(visibleCount, cryptos.length)} of {totalCount.toLocaleString()} coins</Text>
+          <Button size="large" loading={!allCoins} onClick={() => setVisibleCount(visibleCount + PAGE_SIZE)}>Load more</Button>
         </div>
       )}
 
