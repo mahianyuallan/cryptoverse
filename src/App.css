@@ -423,6 +423,13 @@ width: 70%;
 .crypto-card-container{
     min-height: 65vh !important;
 }
+.load-more{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin: 32px 0;
+}
 .crypto-card{
     min-width: 250px;
 }

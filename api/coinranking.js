@@ -5,6 +5,20 @@ const API_HOST = 'coinranking1.p.rapidapi.com';
 // Only the Coinranking endpoints the app uses, so this function can't be used to reach anything else with the key
 const ALLOWED_PATH = /^(coins|coin\/[\w-]+(\/history)?)$/;
 
+// Coin lists arrive with heavy fields the app never shows (each coin's 24-point sparkline alone is ~40% of the payload),
+// so list responses keep only these fields, making them about 6x smaller. Add a field here before using it in the app.
+const COIN_LIST_FIELDS = ['uuid', 'rank', 'name', 'symbol', 'iconUrl', 'price', 'marketCap', 'change'];
+
+const slimCoinList = (body) => {
+  try {
+    const json = JSON.parse(body);
+    json.data.coins = json.data.coins.map((coin) => Object.fromEntries(COIN_LIST_FIELDS.map((field) => [field, coin[field]])));
+    return JSON.stringify(json);
+  } catch (error) {
+    return body;
+  }
+};
+
 module.exports = async (req, res) => {
   const { path = '', ...params } = req.query;
 
@@ -24,7 +38,8 @@ module.exports = async (req, res) => {
     // Let Vercel's CDN reuse successful answers for a minute: visitors share requests, so the RapidAPI quota lasts longer
     res.setHeader('Cache-Control', upstream.ok ? 's-maxage=60, stale-while-revalidate=300' : 'no-store');
     res.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/json');
-    return res.status(upstream.status).send(await upstream.text());
+    const body = await upstream.text();
+    return res.status(upstream.status).send(upstream.ok && path === 'coins' ? slimCoinList(body) : body);
   } catch (error) {
     return res.status(502).json({ message: 'Could not reach the Coinranking API' });
   }
