@@ -1,70 +1,94 @@
-# Getting Started with Create React App
+# CryptoVerse
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A cryptocurrency dashboard with live prices, price charts, news and exchange rankings, built with React, Redux Toolkit (RTK Query) and Ant Design.
 
-## Available Scripts
+**Live demo: [cryptoverse-fawn.vercel.app](https://cryptoverse-fawn.vercel.app)**
 
-In the project directory, you can run:
+![The Cryptocurrencies page: a searchable grid of coins showing each coin's price, market cap and daily change](docs/screenshots/cryptocurrencies.png)
 
-### `npm start`
+## Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **Every listed coin**: around 2,400 coins, searchable by name. The first 100 appear straight away while the full list loads in the background, with a "Load more" button for the rest.
+- **Coin pages**: live price, value statistics, supply data and a price chart with 11 time periods, from 1 hour to all time.
+- **Coin descriptions**: full write-ups grouped under subheadings such as how the coin works, its supply, history and adoption.
+- **Exchanges**: the top 250 exchanges ranked by CoinGecko's Trust Score, with search, a country filter, sortable columns and expandable details.
+- **News**: the latest crypto articles from CoinDesk, each opening in a new tab.
+- **Home page**: global market stats, the top 10 coins and the latest news.
+- **Mobile friendly**: on phones the sidebar becomes a top bar with a collapsible menu.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+<p>
+  <img src="docs/screenshots/coin.png" alt="Bitcoin's coin page with a 7-day price chart, the period's change and the current price" width="49%">
+  <img src="docs/screenshots/exchanges.png" alt="The Exchanges page: summary stats, search, a country filter and a table of exchanges with Trust Scores and 24h volumes" width="49%">
+</p>
+<p align="center">
+  <img src="docs/screenshots/mobile.png" alt="The app on a phone with the navigation menu open" width="300">
+</p>
 
-### `npm test`
+## Tech stack
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- **React 17** and **React Router 5**
+- **Redux Toolkit**, using RTK Query for data fetching and caching
+- **Ant Design 4** for the UI and **Chart.js 3** (react-chartjs-2) for price charts
+- **html-react-parser** for rendering coin and exchange descriptions
+- **Vercel** for hosting and a serverless API function
 
-### `npm run build`
+## How it works
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+| Data | Source |
+|---|---|
+| Coin prices, market stats and price history | [Coinranking API](https://rapidapi.com/Coinranking/api/coinranking1) on RapidAPI |
+| Coin descriptions and exchanges | [CoinGecko API](https://www.coingecko.com/en/api) (free, no key needed) |
+| News | [CoinDesk](https://www.coindesk.com/)'s RSS feed, converted to JSON by [rss2json](https://rss2json.com/) |
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+The RapidAPI key never reaches the browser. The app calls its own `/api/coinranking` serverless function ([api/coinranking.js](api/coinranking.js)), which:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- adds the key on the server
+- only allows the Coinranking endpoints the app uses
+- trims coin lists to the fields the app shows, making them about 6x smaller
+- lets Vercel's CDN cache successful responses for a minute, so visitors share requests
 
-### `npm run eject`
+During local development, [src/setupProxy.js](src/setupProxy.js) serves the same function from the Create React App dev server.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Project structure
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```
+api/coinranking.js    Serverless function that calls Coinranking with the API key
+src/app/store.js      Redux store
+src/services/         RTK Query APIs for Coinranking, CoinGecko and the news feed
+src/components/       Pages and UI components
+src/utils/            Number formatting and the description subheadings helper
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Run it locally
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+You need Node.js 18 or later and a free RapidAPI account subscribed to the [Coinranking API](https://rapidapi.com/Coinranking/api/coinranking1).
 
-## Learn More
+1. Clone the repository and install dependencies:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+   ```bash
+   git clone https://github.com/mahianyuallan/cryptoverse.git
+   cd cryptoverse
+   npm install
+   ```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+2. Create a `.env` file in the project root with your RapidAPI key:
 
-### Code Splitting
+   ```
+   RAPIDAPI_KEY=your-rapidapi-key
+   ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+3. Start the app on [http://localhost:3000](http://localhost:3000):
 
-### Analyzing the Bundle Size
+   ```bash
+   npm start
+   ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Deploy
 
-### Making a Progressive Web App
+Import the repository into [Vercel](https://vercel.com/new) and add `RAPIDAPI_KEY` as an environment variable. [vercel.json](vercel.json) sets the build command and routes every page to the app, so links like `/crypto/...` work on refresh.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+Vercel builds with `CI=true`, which makes Create React App treat lint warnings as errors. Run `CI=true npm run build` locally before pushing to catch them (in PowerShell: `$env:CI="true"; npm run build`).
 
-### Advanced Configuration
+## Credits
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Started from JavaScript Mastery's [Cryptoverse tutorial](https://github.com/adrianhajdin/project_cryptoverse) (2021), then rebuilt for today's APIs: the tutorial's Bing News API has been retired and Coinranking's exchanges endpoint is no longer on the free plan. Market data comes from Coinranking and CoinGecko, and news from CoinDesk.
