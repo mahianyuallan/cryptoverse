@@ -1,6 +1,6 @@
 import React, {useMemo, useState} from 'react'
 import HTMLReactParser from 'html-react-parser';
-import {Avatar, Button, Col, Input, Result, Row, Select, Statistic, Table, Tag, Typography} from 'antd';
+import {Avatar, Button, Col, Input, Result, Row, Select, Statistic, Table, Tag, Tooltip, Typography} from 'antd';
 import {GlobalOutlined, SearchOutlined} from '@ant-design/icons';
 
 import {useGetExchangesQuery} from '../services/coinGeckoApi';
@@ -15,6 +15,11 @@ const formatCompact = (value, options = {}) => new Intl.NumberFormat('en-US', {n
 
 // CoinGecko's Trust Score runs from 1 to 10
 const trustColor = (score) => (score >= 8 ? 'green' : score >= 5 ? 'gold' : 'red');
+
+// CoinGecko sometimes reports impossible volumes (one exchange has claimed 170 billion BTC in a day, far more than the
+// 21 million BTC that will ever exist). Treat anything above that as unreliable: show "—" and leave it out of totals.
+const MAX_PLAUSIBLE_BTC_VOLUME = 21000000;
+const reliableVolume = (exchange) => (exchange.trade_volume_24h_btc <= MAX_PLAUSIBLE_BTC_VOLUME ? exchange.trade_volume_24h_btc : null);
 
 const Exchanges = () => {
   const {data: exchanges, isFetching, isError, refetch} = useGetExchangesQuery();
@@ -42,7 +47,7 @@ const Exchanges = () => {
   // Show volumes in dollars once Bitcoin's price is known, in BTC until then
   const btcPrice = Number(cryptosList?.data?.coins?.find((coin) => coin.uuid === BITCOIN_UUID)?.price);
   const formatVolume = (btcVolume) => (btcPrice ? formatCompact(btcVolume * btcPrice, {style: 'currency', currency: 'USD'}) : `${formatCompact(btcVolume)} BTC`);
-  const totalVolume = (exchanges || []).reduce((sum, exchange) => sum + exchange.trade_volume_24h_btc, 0);
+  const totalVolume = (exchanges || []).reduce((sum, exchange) => sum + (reliableVolume(exchange) ?? 0), 0);
 
   const columns = [
     {
@@ -71,8 +76,10 @@ const Exchanges = () => {
     {
       title: '24h Volume',
       dataIndex: 'trade_volume_24h_btc',
-      sorter: (a, b) => a.trade_volume_24h_btc - b.trade_volume_24h_btc,
-      render: (btcVolume) => formatVolume(btcVolume),
+      sorter: (a, b) => (reliableVolume(a) ?? -1) - (reliableVolume(b) ?? -1),
+      render: (btcVolume, exchange) => (reliableVolume(exchange) == null
+        ? <Tooltip title="CoinGecko reports an impossible volume for this exchange">—</Tooltip>
+        : formatVolume(btcVolume)),
     },
     {
       title: 'Established',
