@@ -92,3 +92,11 @@ Vercel builds with `CI=true`, which makes Create React App treat lint warnings a
 ## Credits
 
 Started from JavaScript Mastery's [Cryptoverse tutorial](https://github.com/adrianhajdin/project_cryptoverse) (2021), then rebuilt for today's APIs: the tutorial's Bing News API has been retired and Coinranking's exchanges endpoint is no longer on the free plan. Market data comes from Coinranking and CoinGecko, and news from CoinDesk.
+
+## Author
+
+Built by [Allan Mwenja Mahianyu](https://www.allanmwenja.com/), software engineer working on backend, payment and AI systems. More of my work is on [GitHub](https://github.com/mahianyuallan).
+
+## License
+
+[MIT](LICENSE)
